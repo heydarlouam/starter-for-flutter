@@ -1,8 +1,5 @@
-
 import 'dart:async';
-
 import 'package:appwrite/appwrite.dart';
-
 import 'appwrite_client.dart';
 
 enum RealtimeAction {

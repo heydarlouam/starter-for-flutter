@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import 'package:appwrite_flutter_starter_kit/state/connection_provider.dart';
+import 'package:getwidget/getwidget.dart';
+import 'package:shimmer_animation/shimmer_animation.dart';
 
-/// صفحه‌ی تست اتصال به Appwrite
-///
-/// این ویجت را در main.dart روی route `/starter-kit` وصل کرده‌ایم.
 class AppwriteStarterKit extends StatelessWidget {
   const AppwriteStarterKit({super.key});
 
@@ -17,13 +15,13 @@ class AppwriteStarterKit extends StatelessWidget {
     final String statusText;
 
     if (connection.lastSuccess == null) {
-      statusColor = Colors.grey;
+      statusColor = GFColors.SECONDARY;
       statusText = 'Not pinged yet';
     } else if (connection.lastSuccess == true) {
-      statusColor = Colors.green;
+      statusColor = GFColors.SUCCESS;
       statusText = 'Connected';
     } else {
-      statusColor = Colors.red;
+      statusColor = GFColors.DANGER;
       statusText = 'Connection error';
     }
 
@@ -35,25 +33,20 @@ class AppwriteStarterKit extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // وضعیت اتصال
-            Card(
+            // وضعیت اتصال - با GFCard + GFListTile
+            GFCard(
               elevation: 2,
-              child: ListTile(
-                leading: CircleAvatar(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              content: GFListTile(
+                avatar: GFAvatar(
                   backgroundColor: statusColor,
                   child: const Icon(
                     Icons.cloud,
                     color: Colors.white,
                   ),
                 ),
-                title: Text(
-                  statusText,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: statusColor,
-                  ),
-                ),
-                subtitle: Text(
+                titleText: statusText,
+                subTitle: Text(
                   connection.lastMessage ??
                       'Press "Ping Appwrite" to test connection.',
                 ),
@@ -61,34 +54,36 @@ class AppwriteStarterKit extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // دکمه‌های Ping و Clear Logs
+            // دکمه‌ی Ping و Clear Logs با GetWidget + Shimmer
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: connection.isPinging
-                        ? null
-                        : () => connection.sendPing(),
-                    icon: connection.isPinging
-                        ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                        : const Icon(Icons.wifi_tethering),
-                    label: Text(
-                      connection.isPinging
-                          ? 'Pinging...'
-                          : 'Ping Appwrite',
+                  child: connection.isPinging
+                      ? Shimmer(
+                    child: GFButton(
+                      onPressed: null,
+                      icon: const Icon(Icons.wifi_tethering),
+                      text: 'Pinging...',
+                      color: GFColors.PRIMARY,
+                      fullWidthButton: true,
                     ),
+                  )
+                      : GFButton(
+                    onPressed: () => connection.sendPing(),
+                    icon: const Icon(Icons.wifi_tethering),
+                    text: 'Ping Appwrite',
+                    color: GFColors.PRIMARY,
+                    fullWidthButton: true,
                   ),
                 ),
                 const SizedBox(width: 8),
-                IconButton(
+                GFIconButton(
+                  icon: const Icon(Icons.delete_sweep),
+                  color: GFColors.DANGER,
+                  type: GFButtonType.outline,
                   onPressed: connection.logs.isEmpty
                       ? null
                       : connection.clearLogs,
-                  icon: const Icon(Icons.delete_sweep),
                   tooltip: 'Clear logs',
                 ),
               ],
@@ -96,11 +91,13 @@ class AppwriteStarterKit extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // لیست لاگ‌ها
+            // لیست لاگ‌ها با GFCard
             Expanded(
-              child: Card(
+              child: GFCard(
                 elevation: 2,
-                child: Column(
+                padding: EdgeInsets.zero,
+                content: Column(
+                  mainAxisSize: MainAxisSize.min, // shrink-wrap
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const Padding(
@@ -114,26 +111,41 @@ class AppwriteStarterKit extends StatelessWidget {
                       ),
                     ),
                     const Divider(height: 1),
-                    Expanded(
-                      child: connection.logs.isEmpty
-                          ? const Center(
-                        child: Text(
-                          'No logs yet. Hit "Ping Appwrite" to start.',
+                    Flexible(
+                      fit: FlexFit.loose,
+                      child: SizedBox(
+                        height: 250, // ارتفاع محدود برای لاگ‌ها
+                        child: connection.logs.isEmpty
+                            ? const Center(
+                          child: Text(
+                            'No logs yet. Hit "Ping Appwrite" to start.',
+                            textAlign: TextAlign.center,
+                          ),
+                        )
+                            : ListView.separated(
+                          reverse: true,
+                          padding: const EdgeInsets.all(8),
+                          itemCount: connection.logs.length,
+                          separatorBuilder: (_, __) =>
+                          const SizedBox(height: 4),
+                          itemBuilder: (context, index) {
+                            final log = connection.logs[index];
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: GFColors.LIGHT.withOpacity(0.6),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                log,
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            );
+                          },
                         ),
-                      )
-                          : ListView.separated(
-                        reverse: true,
-                        padding: const EdgeInsets.all(8),
-                        itemCount: connection.logs.length,
-                        separatorBuilder: (_, __) =>
-                        const SizedBox(height: 4),
-                        itemBuilder: (context, index) {
-                          final log = connection.logs[index];
-                          return Text(
-                            log,
-                            style: const TextStyle(fontSize: 12),
-                          );
-                        },
                       ),
                     ),
                   ],

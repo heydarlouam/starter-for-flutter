@@ -1,4 +1,3 @@
-
 import 'package:appwrite/appwrite.dart';
 
 /// دسته‌بندی کلی خطاهای شبکه

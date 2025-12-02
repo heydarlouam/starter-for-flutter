@@ -1,4 +1,3 @@
-
 import 'package:appwrite/appwrite.dart';
 
 /// Singleton برای نگه‌داری Client / Databases / Realtime در کل اپ.

@@ -1,7 +1,5 @@
 import 'package:flutter/foundation.dart';
-
 import 'package:appwrite/appwrite.dart';
-
 import 'package:appwrite_flutter_starter_kit/config/environment.dart';
 import 'package:appwrite_flutter_starter_kit/config/network/appwrite_client.dart';
 import 'package:appwrite_flutter_starter_kit/config/network/api_result.dart';

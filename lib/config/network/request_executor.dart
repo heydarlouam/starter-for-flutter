@@ -1,13 +1,8 @@
-
-
 import 'dart:async';
 import 'dart:io';
-
 import 'package:appwrite/appwrite.dart';
-
 import 'api_result.dart';
 import 'network_error.dart';
-
 /// اینترفیس ساده برای لاگ کردن رویدادهای شبکه
 abstract class NetworkLogger {
   void log(String message);

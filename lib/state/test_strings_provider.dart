@@ -1,236 +1,17 @@
-// import 'dart:async';
-// import 'package:appwrite/appwrite.dart';
-// import 'package:appwrite_flutter_starter_kit/config/environment.dart';
-// import 'package:appwrite_flutter_starter_kit/config/network/realtime_manager.dart';
-// import 'package:appwrite_flutter_starter_kit/data/models/test_string.dart';
-// import 'package:appwrite_flutter_starter_kit/data/repository/test_strings_repository.dart';
-// import 'package:flutter/foundation.dart';
-// import 'package:flutter/material.dart';
-//
-// class TestStringsProvider extends ChangeNotifier {
-//   final TestStringsRepository _repository;
-//
-//   List<TestString> rows = [];
-//   bool loading = true;
-//   String? error;
-//
-//   final TextEditingController textController = TextEditingController();
-//
-//   StreamSubscription<RealtimeEvent<TestString>>? _realtimeSub;
-//
-//   TestStringsProvider({TestStringsRepository? repository})
-//       : _repository = repository ?? TestStringsRepository() {
-//     _init();
-//   }
-//
-//   Future<void> _init() async {
-//     await _loadInitialRows();
-//     _subscribeToRealtime();
-//   }
-//
-//   Future<void> _loadInitialRows() async {
-//     loading = true;
-//     error = null;
-//     notifyListeners();
-//
-//     final result = await _repository.getAll(
-//       queries: [
-//         Query.orderDesc('\$updatedAt'),
-//
-//       ],
-//     );
-//
-//     if (result.isSuccess) {
-//       rows = result.requireData;
-//       loading = false;
-//       error = null;
-//     } else {
-//       loading = false;
-//       error = result.requireError.message;
-//     }
-//
-//     notifyListeners();
-//   }
-//
-//   void _subscribeToRealtime() {
-//     _realtimeSub?.cancel();
-//
-//     final stream = RealtimeManager.instance.subscribeCollection<TestString>(
-//       databaseId: Environment.databaseId,
-//       collectionId: Environment.collectionIdTestStrings,
-//       fromJson: TestString.fromJson,
-//     );
-//
-//     _realtimeSub = stream.listen(
-//           (event) {
-//         final rowId = event.documentId;
-//         final data = event.data;
-//
-//         if (event.action == RealtimeAction.delete) {
-//           if (rowId != null) {
-//             rows.removeWhere((row) => row.id == rowId);
-//             notifyListeners();
-//           }
-//           return;
-//         }
-//
-//         if (data == null) {
-//           return;
-//         }
-//
-//         switch (event.action) {
-//           case RealtimeAction.create:
-//             final existingIndex =
-//             rows.indexWhere((row) => row.id == data.id);
-//             if (existingIndex == -1) {
-//               rows.insert(0, data);
-//             } else {
-//               rows[existingIndex] = data;
-//             }
-//             break;
-//           case RealtimeAction.update:
-//             final index =
-//             rows.indexWhere((row) => row.id == data.id);
-//             if (index != -1) {
-//               rows[index] = data;
-//             } else {
-//               rows.insert(0, data);
-//             }
-//             break;
-//           case RealtimeAction.unknown:
-//             if (kDebugMode) {
-//               debugPrint('Unknown realtime action: ${event.raw}');
-//             }
-//             break;
-//           case RealtimeAction.delete:
-//           // بالا هندل شده
-//             break;
-//         }
-//
-//         notifyListeners();
-//       },
-//       onError: (Object e, StackTrace st) {
-//         if (kDebugMode) {
-//           debugPrint('Realtime error: $e');
-//         }
-//       },
-//     );
-//   }
-//
-//   // ---------- CRUD ----------
-//
-//   Future<void> createRow() async {
-//     final text = textController.text.trim();
-//     if (text.isEmpty) return;
-//
-//     error = null;
-//     notifyListeners();
-//
-//     final newRow = TestString(id: '', text: text);
-//
-//     final result = await _repository.create(newRow);
-//
-//     if (result.isFailure) {
-//       error = 'Error creating row: ${result.requireError.message}';
-//       notifyListeners();
-//       return;
-//     }
-//
-//     textController.clear();
-//     // لیست توسط رویداد Realtime به‌روز می‌شود.
-//   }
-//
-//   Future<void> updateRow(
-//       BuildContext context,
-//       TestString row,
-//       ) async {
-//     final editController = TextEditingController(text: row.text);
-//
-//     final newText = await showDialog<String?>(
-//       context: context,
-//       builder: (ctx) {
-//         return AlertDialog(
-//           title: const Text('Edit text'),
-//           content: TextField(
-//             controller: editController,
-//             decoration: const InputDecoration(
-//               labelText: 'Text',
-//             ),
-//           ),
-//           actions: [
-//             TextButton(
-//               onPressed: () => Navigator.of(ctx).pop(null),
-//               child: const Text('Cancel'),
-//             ),
-//             ElevatedButton(
-//               onPressed: () =>
-//                   Navigator.of(ctx).pop(editController.text.trim()),
-//               child: const Text('Save'),
-//             ),
-//           ],
-//         );
-//       },
-//     );
-//
-//     if (newText == null || newText.isEmpty) {
-//       return;
-//     }
-//
-//     error = null;
-//     notifyListeners();
-//
-//     final updated = row.copyWith(text: newText);
-//
-//     final result = await _repository.update(row.id, updated);
-//
-//     if (result.isFailure) {
-//       error = 'Error updating row: ${result.requireError.message}';
-//       notifyListeners();
-//       return;
-//     }
-//
-//     // بروز شدن داده‌ها با Realtime
-//   }
-//
-//   Future<void> deleteRow(TestString row) async {
-//     error = null;
-//     notifyListeners();
-//
-//     final result = await _repository.delete(row.id);
-//
-//     if (result.isFailure) {
-//       error = 'Error deleting row: ${result.requireError.message}';
-//       notifyListeners();
-//       return;
-//     }
-//
-//     // حذف با Realtime اعمال می‌شود.
-//   }
-//
-//   @override
-//   void dispose() {
-//     textController.dispose();
-//     _realtimeSub?.cancel();
-//     super.dispose();
-//   }
-// }
-
-
 import 'dart:async';
-
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite_flutter_starter_kit/config/environment.dart';
+import 'package:appwrite_flutter_starter_kit/config/network/api_result.dart';
 import 'package:appwrite_flutter_starter_kit/config/network/realtime_manager.dart';
 import 'package:appwrite_flutter_starter_kit/data/models/test_string.dart';
 import 'package:appwrite_flutter_starter_kit/data/repository/test_strings_repository.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 
 class TestStringsProvider extends ChangeNotifier {
   final TestStringsRepository _repository;
 
-  // اندازه هر صفحه
-  static const int _pageSize = 3;
+  // اندازه هر صفحه (۵۰ تا ۵۰ تا)
+  static const int _pageSize = 15;
 
   // State اصلی
   List<TestString> rows = [];
@@ -238,12 +19,10 @@ class TestStringsProvider extends ChangeNotifier {
   bool isLoadingMore = false; // لود صفحه‌های بعدی
   bool hasMore = true;        // آیا هنوز دیتا برای صفحات بعدی هست یا نه
 
-  String? _cursorAfter;             // برای pagination با cursor
-  final Set<String> _loadedIds = {}; // لیست IDهایی که تا الان گرفتیم (برای حذف تکراری‌ها)
+  String? _cursorAfter;               // برای pagination با cursor
+  final Set<String> _loadedIds = {};  // IDهایی که تا الان گرفتیم (برای حذف تکراری‌ها)
 
   String? error;
-
-  final TextEditingController textController = TextEditingController();
 
   StreamSubscription<RealtimeEvent<TestString>>? _realtimeSub;
 
@@ -303,7 +82,7 @@ class TestStringsProvider extends ChangeNotifier {
     await _loadInitialRows();
   }
 
-  /// لود صفحه‌ی بعدی (۵۰ تا ۵۰ تا) با cursor
+  /// لود صفحه‌ی بعدی با cursor (۵۰ تا ۵۰ تا)
   Future<void> loadMore() async {
     if (loading || isLoadingMore || !hasMore) return;
 
@@ -450,99 +229,49 @@ class TestStringsProvider extends ChangeNotifier {
     );
   }
 
-  // ---------- CRUD ----------
+  // ----------------- CRUD برای UI (بدون دیالوگ) -----------------
 
-  Future<void> createRow() async {
-    final text = textController.text.trim();
-    if (text.isEmpty) return;
-
-    error = null;
-    notifyListeners();
-
+  /// ایجاد رکورد جدید
+  Future<ApiResult<TestString>> create(String text) async {
     final newRow = TestString(id: '', text: text);
 
     final result = await _repository.create(newRow);
 
     if (result.isFailure) {
-      error = 'Error creating row: ${result.requireError.message}';
-      notifyListeners();
-      return;
+      return ApiResult.failure(result.requireError);
     }
 
-    textController.clear();
-    // لیست توسط رویداد Realtime به‌روز می‌شود.
+    // لیست با Realtime به‌روزرسانی می‌شود.
+    return result;
   }
 
-  Future<void> updateRow(
-      BuildContext context,
-      TestString row,
-      ) async {
-    final editController = TextEditingController(text: row.text);
-
-    final newText = await showDialog<String?>(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text('Edit text'),
-          content: TextField(
-            controller: editController,
-            decoration: const InputDecoration(
-              labelText: 'Text',
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(null),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () =>
-                  Navigator.of(ctx).pop(editController.text.trim()),
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (newText == null || newText.isEmpty) {
-      return;
-    }
-
-    error = null;
-    notifyListeners();
-
+  /// ویرایش رکورد
+  Future<ApiResult<TestString>> update(TestString row, String newText) async {
     final updated = row.copyWith(text: newText);
-
     final result = await _repository.update(row.id, updated);
 
     if (result.isFailure) {
-      error = 'Error updating row: ${result.requireError.message}';
-      notifyListeners();
-      return;
+      return ApiResult.failure(result.requireError);
     }
 
-    // آپدیت واقعی لیست با Realtime انجام می‌شود.
+    // لیست با Realtime به‌روزرسانی می‌شود.
+    return result;
   }
 
-  Future<void> deleteRow(TestString row) async {
-    error = null;
-    notifyListeners();
-
+  /// حذف رکورد
+  Future<ApiResult<void>> delete(TestString row) async {
     final result = await _repository.delete(row.id);
 
     if (result.isFailure) {
-      error = 'Error deleting row: ${result.requireError.message}';
-      notifyListeners();
-      return;
+      return ApiResult.failure(result.requireError);
     }
 
-    // حذف با Realtime اعمال می‌شود.
+    // حذف از لیست با Realtime انجام می‌شود.
+    return result;
   }
 
   @override
   void dispose() {
-    textController.dispose();
     _realtimeSub?.cancel();
     super.dispose();
   }
