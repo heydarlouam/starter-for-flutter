@@ -1,5 +1,8 @@
 class Environment {
-  static const String appwritePublicEndpoint = '[appwritePublicEndpoint]';
-  static const String appwriteProjectId = '[appwriteProjectId]';
-  static const String appwriteProjectName = '[appwriteProjectName]';
+  static const String appwritePublicEndpoint = 'https://pb.frozencoffee.ir/v1';
+  static const String appwriteProjectId = '692c0b6a00389c2456f6';
+  static const String appwriteProjectName = 'menumita';
+  // Database & collection IDs
+  static const String databaseId = 'testdb';
+  static const String collectionIdTestStrings = 'test_strings';
 }
