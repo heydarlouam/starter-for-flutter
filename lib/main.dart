@@ -1,9 +1,11 @@
 import 'package:appwrite_flutter_starter_kit/config/environment.dart';
 import 'package:appwrite_flutter_starter_kit/config/network/appwrite_client.dart';
 import 'package:appwrite_flutter_starter_kit/page/appwritestarterkit.dart';
+import 'package:appwrite_flutter_starter_kit/page/todos_page.dart';
 import 'package:appwrite_flutter_starter_kit/state/connection_provider.dart';
 import 'package:appwrite_flutter_starter_kit/state/test_strings_provider.dart';
 import 'package:appwrite_flutter_starter_kit/page/test_strings_page.dart';
+import 'package:appwrite_flutter_starter_kit/state/todos_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart';
@@ -28,6 +30,9 @@ Future<void> main() async {
         ChangeNotifierProvider(
           create: (_) => TestStringsProvider(),
         ),
+        ChangeNotifierProvider(
+          create: (_) => TodosProvider(),
+        ),
       ],
       child: const MyApp(),
     ),
@@ -51,7 +56,10 @@ class MyApp extends StatelessWidget {
         '/': (context) => const HomePage(),
         TestStringsPage.routeName: (context) => const TestStringsPage(),
         '/starter-kit': (context) => const AppwriteStarterKit(),
+        // 🆕
+        TodosPage.routeName: (context) => const TodosPage(),
       },
+
     );
   }
 }
@@ -82,6 +90,13 @@ class HomePage extends StatelessWidget {
               },
               child: const Text('Open Appwrite StarterKit page'),
             ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pushNamed(TodosPage.routeName);
+              },
+              child: const Text('Todos (Realtime + Provider)'),
+            ),
+
           ],
         ),
       ),
