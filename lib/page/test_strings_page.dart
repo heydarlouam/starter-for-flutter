@@ -6,6 +6,14 @@ import 'package:appwrite_flutter_starter_kit/utils/app_notifier.dart';
 import 'package:getwidget/getwidget.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 
+import 'package:appwrite_flutter_starter_kit/state/test_strings_provider.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:appwrite_flutter_starter_kit/data/models/test_string.dart';
+import 'package:appwrite_flutter_starter_kit/utils/app_notifier.dart';
+import 'package:getwidget/getwidget.dart';
+import 'package:shimmer_animation/shimmer_animation.dart';
+
 class TestStringsPage extends StatelessWidget {
   static const String routeName = '/test-strings';
 
@@ -70,22 +78,26 @@ class TestStringsPage extends StatelessWidget {
                 },
                 child: ListView.separated(
                   itemCount: _calculateItemCount(provider),
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  separatorBuilder: (_, __) =>
+                  const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     // ایندکس اضافه برای حالت لود بیشتر / پایان لیست
                     if (index >= provider.rows.length) {
                       if (provider.isLoadingMore) {
                         // کارت شیمری برای loadMore
                         return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 8),
                           child: _buildShimmerCard(context),
                         );
                       }
 
-                      if (!provider.hasMore && provider.rows.isNotEmpty) {
+                      if (!provider.hasMore &&
+                          provider.rows.isNotEmpty) {
                         // کارت پایان لیست
                         return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 8),
                           child: _buildEndOfListCard(context),
                         );
                       }
@@ -98,7 +110,9 @@ class TestStringsPage extends StatelessWidget {
                       padding: const EdgeInsets.all(0),
                       margin: EdgeInsets.zero,
                       content: GFListTile(
-                        titleText: row.text.isEmpty ? '(no text)' : row.text,
+                        titleText: row.text.isEmpty
+                            ? '(no text)'
+                            : row.text,
                         subTitleText: 'ID: ${row.id}',
                         icon: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -107,13 +121,15 @@ class TestStringsPage extends StatelessWidget {
                               icon: const Icon(Icons.edit),
                               type: GFButtonType.transparent,
                               onPressed: () =>
-                                  _showAddEditDialog(context, row: row),
+                                  _showAddEditDialog(context,
+                                      row: row),
                             ),
                             GFIconButton(
                               icon: const Icon(Icons.delete),
                               color: GFColors.DANGER,
                               type: GFButtonType.transparent,
-                              onPressed: () => _showDeleteDialog(context, row),
+                              onPressed: () =>
+                                  _showDeleteDialog(context, row),
                             ),
                           ],
                         ),
@@ -121,7 +137,6 @@ class TestStringsPage extends StatelessWidget {
                     );
                   },
                 ),
-
               ),
             ),
           ],
@@ -215,6 +230,9 @@ class TestStringsPage extends StatelessWidget {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
+        // NavigatorState را در لحظه‌ی ساخت دیالوگ می‌گیریم
+        final navigator = Navigator.of(dialogContext);
+
         return StatefulBuilder(
           builder: (dialogContext, setState) {
             Future<void> submit() async {
@@ -236,7 +254,10 @@ class TestStringsPage extends StatelessWidget {
                   : await provider.create(text);
 
               if (result.isSuccess) {
-                Navigator.of(dialogContext).pop();
+                // اگر دیالوگ/route در این فاصله بسته شده باشد
+                if (!navigator.mounted) return;
+
+                navigator.pop();
                 AppNotifier.showSuccess(
                   context,
                   isEdit ? 'با موفقیت ویرایش شد.' : 'با موفقیت ثبت شد.',
@@ -304,9 +325,8 @@ class TestStringsPage extends StatelessWidget {
                         size: GFSize.SMALL,
                         type: GFButtonType.outline,
                         color: GFColors.DARK,
-                        onPressed: isSubmitting
-                            ? null
-                            : () => Navigator.of(dialogContext).pop(),
+                        onPressed:
+                        isSubmitting ? null : () => navigator.pop(),
                         text: 'انصراف',
                       ),
                     ),
@@ -352,6 +372,9 @@ class TestStringsPage extends StatelessWidget {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
+        // NavigatorState را همین‌جا می‌گیریم
+        final navigator = Navigator.of(dialogContext);
+
         return StatefulBuilder(
           builder: (dialogContext, setState) {
             Future<void> submit() async {
@@ -363,7 +386,9 @@ class TestStringsPage extends StatelessWidget {
               final result = await provider.delete(row);
 
               if (result.isSuccess) {
-                Navigator.of(dialogContext).pop();
+                if (!navigator.mounted) return;
+
+                navigator.pop();
                 AppNotifier.showSuccess(context, 'با موفقیت حذف شد.');
               } else {
                 final err = result.requireError;
@@ -419,9 +444,8 @@ class TestStringsPage extends StatelessWidget {
                         size: GFSize.SMALL,
                         type: GFButtonType.outline,
                         color: GFColors.DARK,
-                        onPressed: isSubmitting
-                            ? null
-                            : () => Navigator.of(dialogContext).pop(),
+                        onPressed:
+                        isSubmitting ? null : () => navigator.pop(),
                         text: 'انصراف',
                       ),
                     ),
@@ -453,7 +477,6 @@ class TestStringsPage extends StatelessWidget {
       },
     );
   }
-
 
   int _calculateItemCount(TestStringsProvider provider) {
     var count = provider.rows.length;
@@ -494,5 +517,5 @@ class TestStringsPage extends StatelessWidget {
       ),
     );
   }
-
 }
+

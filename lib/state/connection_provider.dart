@@ -5,9 +5,10 @@ import 'package:appwrite_flutter_starter_kit/config/network/appwrite_client.dart
 import 'package:appwrite_flutter_starter_kit/config/network/api_result.dart';
 import 'package:appwrite_flutter_starter_kit/config/network/network_error.dart';
 import 'package:appwrite_flutter_starter_kit/config/network/request_executor.dart';
+import 'package:appwrite_flutter_starter_kit/state/base_provider.dart';
 
 /// Provider برای تست اتصال به Appwrite (ping)
-class ConnectionProvider extends ChangeNotifier {
+class ConnectionProvider extends BaseProvider {
   final RequestExecutor _executor;
 
   bool isPinging = false;
@@ -73,4 +74,12 @@ class ConnectionProvider extends ChangeNotifier {
       print(logs.first);
     }
   }
+
+  @override
+  void dispose() {
+    // فعلاً resource خاصی برای cleanup نداری،
+    // ولی اگر بعداً چیزی اضافه شد (مثل StreamSubscription)، اینجا کنسل کن.
+    super.dispose();
+  }
 }
+

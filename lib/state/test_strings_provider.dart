@@ -6,11 +6,13 @@ import 'package:appwrite_flutter_starter_kit/config/network/realtime_manager.dar
 import 'package:appwrite_flutter_starter_kit/data/models/test_string.dart';
 import 'package:appwrite_flutter_starter_kit/data/repository/test_strings_repository.dart';
 import 'package:flutter/foundation.dart';
+import 'package:appwrite_flutter_starter_kit/state/base_provider.dart';
 
-class TestStringsProvider extends ChangeNotifier {
+
+class TestStringsProvider extends BaseProvider {
   final TestStringsRepository _repository;
 
-  // اندازه هر صفحه (۵۰ تا ۵۰ تا)
+  // اندازه هر صفحه
   static const int _pageSize = 15;
 
   // State اصلی
@@ -20,7 +22,7 @@ class TestStringsProvider extends ChangeNotifier {
   bool hasMore = true;        // آیا هنوز دیتا برای صفحات بعدی هست یا نه
 
   String? _cursorAfter;               // برای pagination با cursor
-  final Set<String> _loadedIds = {};  // IDهایی که تا الان گرفتیم (برای حذف تکراری‌ها)
+  final Set<String> _loadedIds = {};  // IDهایی که تا الان گرفتیم (برای استفاده‌های بعدی)
 
   String? error;
 
@@ -77,12 +79,12 @@ class TestStringsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// برای pull-to-refresh اگر بعداً خواستی
+  /// برای pull-to-refresh
   Future<void> refresh() async {
     await _loadInitialRows();
   }
 
-  /// لود صفحه‌ی بعدی با cursor (۵۰ تا ۵۰ تا)
+  /// لود صفحه‌ی بعدی با cursor
   Future<void> loadMore() async {
     if (loading || isLoadingMore || !hasMore) return;
 
@@ -150,6 +152,7 @@ class TestStringsProvider extends ChangeNotifier {
 
   /// اشتراک روی Realtime برای همین کالکشن
   void _subscribeToRealtime() {
+    // اگر قبلاً subscriptionی بوده، لغوش کن
     _realtimeSub?.cancel();
 
     final stream = RealtimeManager.instance.subscribeCollection<TestString>(
@@ -241,7 +244,18 @@ class TestStringsProvider extends ChangeNotifier {
       return ApiResult.failure(result.requireError);
     }
 
-    // لیست با Realtime به‌روزرسانی می‌شود.
+    // آپدیت دستی لیست بعد از موفقیت (در کنار Realtime)
+    final created = result.requireData;
+    final index = rows.indexWhere((row) => row.id == created.id);
+    if (index == -1) {
+      rows.insert(0, created);
+      _loadedIds.add(created.id);
+    } else {
+      rows[index] = created;
+    }
+    _sortRowsByUpdatedAt();
+    notifyListeners();
+
     return result;
   }
 
@@ -254,7 +268,18 @@ class TestStringsProvider extends ChangeNotifier {
       return ApiResult.failure(result.requireError);
     }
 
-    // لیست با Realtime به‌روزرسانی می‌شود.
+    // آپدیت دستی لیست بعد از موفقیت (در کنار Realtime)
+    final updatedRow = result.requireData;
+    final index = rows.indexWhere((r) => r.id == updatedRow.id);
+    if (index != -1) {
+      rows[index] = updatedRow;
+    } else {
+      rows.insert(0, updatedRow);
+      _loadedIds.add(updatedRow.id);
+    }
+    _sortRowsByUpdatedAt();
+    notifyListeners();
+
     return result;
   }
 
@@ -266,13 +291,21 @@ class TestStringsProvider extends ChangeNotifier {
       return ApiResult.failure(result.requireError);
     }
 
-    // حذف از لیست با Realtime انجام می‌شود.
+    // حذف دستی از لیست بعد از موفقیت (در کنار Realtime)
+    rows.removeWhere((r) => r.id == row.id);
+    _loadedIds.remove(row.id);
+    _sortRowsByUpdatedAt();
+    notifyListeners();
+
     return result;
   }
 
   @override
   void dispose() {
+    // کارهای خاص این Provider (مثلاً لغو Realtime)
     _realtimeSub?.cancel();
+    // در انتها کارهای مشترک BaseProvider (علامت‌زدن به عنوان disposed و...)
     super.dispose();
   }
 }
+
